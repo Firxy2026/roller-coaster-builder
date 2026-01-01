@@ -32,15 +32,40 @@ export function Track() {
     const points = trackPoints.map((p) => p.position.clone());
     const curve = new THREE.CatmullRomCurve3(points, isLooped, "catmullrom", 0.5);
     
-    const railData: { point: THREE.Vector3; tilt: number; tangent: THREE.Vector3 }[] = [];
+    const railData: { point: THREE.Vector3; tilt: number; tangent: THREE.Vector3; normal: THREE.Vector3 }[] = [];
     const numSamples = Math.max(trackPoints.length * 20, 100);
+    
+    // Use parallel transport to maintain a stable normal through vertical sections
+    let prevNormal = new THREE.Vector3(0, 1, 0);
+    const firstTangent = curve.getTangent(0);
+    // Initialize normal perpendicular to first tangent
+    prevNormal.crossVectors(firstTangent, new THREE.Vector3(0, 1, 0));
+    if (prevNormal.length() < 0.01) {
+      prevNormal.crossVectors(firstTangent, new THREE.Vector3(1, 0, 0));
+    }
+    prevNormal.normalize();
     
     for (let i = 0; i <= numSamples; i++) {
       const t = i / numSamples;
       const point = curve.getPoint(t);
-      const tangent = curve.getTangent(t);
+      const tangent = curve.getTangent(t).normalize();
       const tilt = interpolateTilt(trackPoints, t, isLooped);
-      railData.push({ point, tilt, tangent });
+      
+      // Parallel transport: project previous normal onto plane perpendicular to current tangent
+      const dot = prevNormal.dot(tangent);
+      const normal = prevNormal.clone().sub(tangent.clone().multiplyScalar(dot)).normalize();
+      
+      // Handle degenerate case
+      if (normal.length() < 0.01) {
+        normal.crossVectors(tangent, new THREE.Vector3(0, 1, 0));
+        if (normal.length() < 0.01) {
+          normal.crossVectors(tangent, new THREE.Vector3(1, 0, 0));
+        }
+        normal.normalize();
+      }
+      
+      prevNormal.copy(normal);
+      railData.push({ point, tilt, tangent, normal });
     }
     
     const woodSupports: { pos: THREE.Vector3; tangent: THREE.Vector3; height: number; tilt: number }[] = [];
@@ -79,8 +104,7 @@ export function Track() {
   const railOffset = 0.3;
   
   for (let i = 0; i < railData.length; i++) {
-    const { point, tilt, tangent } = railData[i];
-    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+    const { point, tilt, tangent, normal } = railData[i];
     
     const tiltRad = (tilt * Math.PI) / 180;
     const tiltCos = Math.cos(tiltRad);

@@ -12,6 +12,7 @@ export function RideCamera() {
   const previousCameraPos = useRef(new THREE.Vector3());
   const previousLookAt = useRef(new THREE.Vector3());
   const previousRoll = useRef(0);
+  const previousUp = useRef(new THREE.Vector3(0, 1, 0));
   const maxHeightReached = useRef(0);
   
   const firstPeakT = useMemo(() => {
@@ -53,6 +54,8 @@ export function RideCamera() {
     if (isRiding && curveRef.current) {
       const startPoint = curveRef.current.getPoint(0);
       maxHeightReached.current = startPoint.y;
+      // Reset up vector for new ride
+      previousUp.current.set(0, 1, 0);
     }
   }, [isRiding]);
   
@@ -106,13 +109,23 @@ export function RideCamera() {
       : Math.min(newProgress + 0.02, 0.999);
     const lookAtPoint = curve.getPoint(lookAheadT);
     
-    const tangent = curve.getTangent(newProgress);
-    const binormal = new THREE.Vector3();
-    const normal = new THREE.Vector3(0, 1, 0);
-    binormal.crossVectors(tangent, normal).normalize();
+    const tangent = curve.getTangent(newProgress).normalize();
+    
+    // Parallel transport: maintain a stable up vector through vertical sections
+    const dot = previousUp.current.dot(tangent);
+    const upVector = previousUp.current.clone().sub(tangent.clone().multiplyScalar(dot));
+    if (upVector.length() > 0.01) {
+      upVector.normalize();
+    } else {
+      // Fallback if degenerate
+      upVector.set(0, 1, 0);
+      const d2 = upVector.dot(tangent);
+      upVector.sub(tangent.clone().multiplyScalar(d2)).normalize();
+    }
+    previousUp.current.copy(upVector);
     
     const cameraHeight = 1.5;
-    const cameraOffset = normal.clone().multiplyScalar(cameraHeight);
+    const cameraOffset = upVector.clone().multiplyScalar(cameraHeight);
     
     const targetCameraPos = position.clone().add(cameraOffset);
     const targetLookAt = lookAtPoint.clone().add(cameraOffset.clone().multiplyScalar(0.5));
