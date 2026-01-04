@@ -22,7 +22,6 @@ export const CABLE_ANCHOR_HEIGHT = 0.2 * SCALE;
 
 export const SUPPORT_INTERVAL = 3;
 export const LIGHT_INTERVAL = 6;
-export const SAMPLES_PER_POINT = 15;
 
 export const TRACK_LIGHT_SIZE = 0.3 * SCALE;
 export const TRACK_LIGHT_OFFSET = 0.5 * SCALE;
@@ -49,6 +48,11 @@ export const CAMERA_HEIGHT = 1.5 * SCALE;
 export const CAMERA_LOOK_AHEAD = 0.5 * SCALE;
 export const CAMERA_LERP = 0.1;
 
-export const CHAIN_SPEED = 0.9 * SCALE;
-export const MIN_RIDE_SPEED = 1.0 * SCALE;
-export const GRAVITY_SCALE = SCALE;
+export const CHAIN_SPEED = 0.9;
+export const MIN_RIDE_SPEED = 1.0;
+export const GRAVITY_SCALE = 1 / SCALE;
+
+export const TRACK_POINT_RADIUS = 0.5 * SCALE;
+export const TRANSFORM_CONTROL_SIZE = 0.75 * SCALE;
+
+export const SAMPLES_PER_POINT = 10;
