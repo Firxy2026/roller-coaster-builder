@@ -139,7 +139,7 @@ export const useRollerCoaster = create<RollerCoasterState>((set, get) => ({
         forward.normalize();
       }
       
-      const loopRadius = 8;
+      const loopRadius = 5;
       const totalLoopPoints = 20;
       const loopPoints: TrackPoint[] = [];
       const helixSeparation = 3.5; // Mild corkscrew separation
